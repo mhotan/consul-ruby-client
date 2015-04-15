@@ -14,4 +14,4 @@
 mkmf.log
 
 # Ignore all development gems.
-consul-client-*.gem
+*.gem

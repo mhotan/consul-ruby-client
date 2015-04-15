@@ -79,8 +79,9 @@ module Consul
           else
             resp = RestClient.put(url, value) {|response, req, res| response }
           end
-          logger.warn("Unable to send #{value} to endpoint #{url} returned code: #{resp.code}") unless resp.code == 200
-          return (resp.code == 200 or resp.code == 201), resp.body
+          success = (resp.code == 200 or resp.code == 201)
+          logger.warn("Unable to send #{value} to endpoint #{url} returned code: #{resp.code}") unless success
+          return success, resp.body
         rescue Exception => e
           logger.error('RestClient.put Error: Unable to reach consul agent')
           raise IOError.new "Unable to complete put request: #{e}"

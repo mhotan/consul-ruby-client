@@ -1,7 +1,6 @@
 require 'spec_helper'
 
-describe 'Base Consul Client' do
-  include Consul::Client::Base
+describe Consul::Client::Base do
 
   before :all do
     # Create a temporary directory that will be cleaned up
@@ -22,6 +21,5 @@ describe 'Base Consul Client' do
   it 'should be reachable' do
     expect(BaseApiImpl.new.is_reachable).to eq(true)
   end
-
 
 end

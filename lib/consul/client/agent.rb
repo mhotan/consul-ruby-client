@@ -51,6 +51,13 @@ module Consul
         c.keep_if {|c| c.check_id == id}.first unless c.nil?
       end
 
+      # Public: Returns a Health Check for a specific service.
+      #
+      # service_id - The ID of the service.
+      def service_check(service_id)
+        check("service:#{service_id}")
+      end
+
       # Public: Registers either a service or a Health check with configured consul agent.
       #
       # entity - CO or ConsulService instance
@@ -93,49 +100,54 @@ module Consul
       #
       # Returns - the HTTP Response
       def deregister(entity)
-        raise TypeError unless entity.kind_of? Consul::Model::HealthCheck or entity.kind_of? Consul::Model::Service
-        case entity
-          when Consul::Model::HealthCheck
-            url = build_check_url('deregister')
-          else
-            url = build_service_url('deregister')
+        unless entity.nil?
+          raise TypeError unless entity.kind_of? Consul::Model::HealthCheck or entity.kind_of? Consul::Model::Service
+          case entity
+            when Consul::Model::HealthCheck
+              url = build_check_url('deregister')
+            else
+              url = build_service_url('deregister')
+          end
+          get "#{url}/#{entity.id}"
         end
-        get "#{url}/#{entity.id}"
       end
 
-      # # Register a service on this consul agent.
-      # #
-      # # The service will be associated to the IP address of this machine.
-      # # The ttl argument is the time that the service has to live until it needs to send another heartbeat signal.
-      # def register_service(service_name,
-      #                      ttl,
-      #                      port = nil)
-      #   unless service_name.nil? or ttl.nil?
-      #     url = build_service_url("register")
-      #     begin
-      #       service_hash = { :Name => service_name,
-      #                        :Port => port,
-      #                        :Check => { :TTL => ttl }
-      #       }.reject{ |k,v| v.nil? }
-      #       service_name = JSON.generate(service_hash)
-      #     rescue JSON::GeneratorError
-      #       @logger.error("Using non-JSON value for key #{service_hash}.  Skipped registration of #{service_name}")
-      #     end
-      #   end
-      #   @logger.debug("Registering service: '#{service_name}' at location: '#{url}'")
-      #   register_service_with_expbackoff(url, service_name, 0, 3)
-      # end
+      # Public: Pass a health check.
       #
-      # # Deregisters the service if the service exists on this agent.
-      # def deregister_service(service_name)
-      #   unless service_name.nil?
-      #     url = "#{build_service_url("deregister")}/#{service_name}"
-      #     @logger.debug("Deregistering service: '#{service_name}' at '#{url}'")
-      #     RestClient.get url
-      #   end
-      # end
+      # check - Consul::Model::HealthCheck to pass.  Cannot be nil or wrong type
+      #
+      def pass(check)
+        update_check_status(check, 'pass')
+      end
+
+      # Public: Warn a health check
+      #
+      # check - Consul::Model::HealthCheck to pass.  Cannot be nil or wrong type
+      #
+      def warn(check)
+        update_check_status(check, 'warn')
+      end
+
+      # Public: Fails a health check
+      #
+      # check - Consul::Model::HealthCheck to pass.  Cannot be nil or wrong type
+      #
+      def fail(check)
+        update_check_status(check, 'fail')
+      end
 
       private
+
+      # Private: Updates the check with the argument status.
+      def update_check_status(check, status)
+        unless check.instance_of?(Consul::Model::HealthCheck) and check.respond_to?(:to_str)
+          check = check(check.to_str)
+        end
+        return false if check.nil?
+        raise ArgumentError.new "Illegal Status #{status}" unless status == 'pass' or status == 'warn' or status == 'fail'
+        resp = get build_check_url("#{status}/#{check.check_id}")
+        resp.code == 200
+      end
 
       # Private: Register a consul entity with the existing agent but attempts and exponentially increasing interval if
       # fails.
