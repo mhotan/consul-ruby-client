@@ -14,7 +14,7 @@ module Consul
       def nodes(dc = nil)
         params = {}
         params[:dc] = dc unless dc.nil?
-        JSON.parse(get build_url('nodes'), params).map {|n| Consul::Model::Node.new.extend(Consul::Model::Node::Representer).from_hash(n)}
+        JSON.parse(_get build_url('nodes'), params).map {|n| Consul::Model::Node.new.extend(Consul::Model::Node::Representer).from_hash(n)}
       end
 
       # Public: Returns a list of services that are within the supplied or agent data center
@@ -36,7 +36,7 @@ module Consul
       def services(dc = nil)
         params = {}
         params[:dc] = dc unless dc.nil?
-        JSON.parse(get build_url('services'), params)
+        JSON.parse(_get build_url('services'), params)
       end
 
       # Public: Returns all the nodes within a data center that have the service specified.
@@ -55,7 +55,7 @@ module Consul
         params = {}
         params[:dc] = dc unless dc.nil?
         params.add[:tag] = tag unless tag.nil?
-        JSON.parse(get build_url("service/#{id}"), params).map {|n| Consul::Model::Node.new.extend(Consul::Model::Node::Representer).from_hash(n)}
+        JSON.parse(_get build_url("service/#{id}"), params).map {|n| Consul::Model::Node.new.extend(Consul::Model::Node::Representer).from_hash(n)}
       end
 
       # Public: Returns all the nodes within a data center that have the service specified.
@@ -71,13 +71,19 @@ module Consul
       def node(name, dc = nil)
         params = {}
         params[:dc] = dc unless dc.nil?
-        resp = JSON.parse(get build_url("node/#{name}"), params)
+        resp = JSON.parse(_get build_url("node/#{name}"), params)
         n = Consul::Model::Node.new.extend(Consul::Model::Node::Representer).from_hash(resp['Node'])
         unless resp[:Services].nil?
           n.services = resp['Services'].keys.map{|k| Consul::Model::Service.new.extend(Consul::Model::Service::Representer).from_hash(resp[:Services][k])}
         end
         n
       end
+
+      def data_centers
+        _get build_url('datacenters'), params = nil, json_only = false
+      end
+
+      private
 
       # Public: Builds the base url
       #

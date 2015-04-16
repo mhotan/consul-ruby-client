@@ -14,7 +14,7 @@ module Consul
       # Returns: An array of all the ConsulService(s) registered on this agent.
       def services
         begin
-          resp = get build_agent_url('services')
+          resp = _get build_agent_url('services')
         rescue
           @logger.warn('Unable to request all the services on this through the HTTP API')
           return nil
@@ -34,7 +34,7 @@ module Consul
 
       def checks
         begin
-          resp = get build_agent_url('checks')
+          resp = _get build_agent_url('checks')
         rescue
           @logger.warn('Unable to request all the checks on this through the HTTP API')
           return nil
@@ -60,17 +60,16 @@ module Consul
 
       # Public: Registers either a service or a Health check with configured consul agent.
       #
-      # entity - CO or ConsulService instance
-      # opts - Rest options.
+      # entity - Consul::Model::Service or Consul::Model::HealthCheck instance.
       #
       # Example
       #   agent = Consul::Client::Agent.new('dc1')
       #   # Register a service
-      #   agent.register()
+      #   agent.register(Consul::Client::Agent::Service.for_name('cat'))
       #   # Register a HealthCheck
-      #   agent.register(ConsulHealthCheck.new(:id => 'my_health_service', ttl: '15s'))
+      #   agent.register(Consul::Client::HealthCheck.ttl('my_check_name', '15m'))
       #   # Register a service with a Consul Health Check
-      #   agent.register(ConsulService.new(:id => 'hello_world_service', check: ConsulHealthCheck.new(ttl: '15s')))
+      #   agent.register(Consul::Client::Agent::Service.for_name('cat', Consul::Client::Agent::Service.ttl_health_check('15m')))
       #
       # Returns true upon success, false upon failure
       def register(entity)
@@ -87,7 +86,7 @@ module Consul
                 # Pass the first health check
                 c = check("service:#{entity.name}")
                 @logger.info("Updating status for health check #{c.check_id} to \"pass\".")
-                get build_check_status_url(c.check_id, 'pass')
+                _get build_check_status_url(c.check_id, 'pass')
               end
             end
             return success
@@ -108,7 +107,7 @@ module Consul
             else
               url = build_service_url('deregister')
           end
-          get "#{url}/#{entity.id}"
+          _get "#{url}/#{entity.id}"
         end
       end
 
@@ -136,6 +135,130 @@ module Consul
         update_check_status(check, 'fail')
       end
 
+      # Public: Enter maintenance mode.
+      #
+      # enable  - Flag to indicate to enable maintanence mode or not
+      # service - Set maintanence for a particular service is set.
+      # reason  - Optional reason.
+      def maintenance(enable, service = nil, reason = nil)
+        if service.nil?
+          url = build_agent_url('maintenance')
+        else
+          if service.instance_of?(Consul::Model::Service)
+            service = service.id
+          end
+          raise ArgumentError.new "Unable to create request for #{service}" unless service.respond_to?(:to_str)
+          url = build_service_url("maintenance/#{service}")
+        end
+        params = {:enable => enable}
+        params[:reason] = reason unless reason.nil?
+        _get url, params
+      end
+
+      module HealthCheck
+
+        # Public: TTL Check
+        #
+        # name  - The name of the check, Cannot be nil
+        # ttl   - Time to live time window. IE "15s", Cannot be nil
+        # id    - ID to associate with this check if 'name' is not desired.
+        # notes - Message to place as notes for this check
+        #
+        # Returns: Consul::Model::HealthCheck instance
+        def self.ttl(name, ttl, id = name, notes = nil)
+          validate_arg name
+          validate_arg ttl
+          c = Consul::Model::HealthCheck.new(name: name, ttl: ttl)
+          c[:id] = id unless id.nil?
+          c[:notes] = notes unless notes.nil?
+          c
+        end
+
+        # Public: TTL Check
+        #
+        # name      - The name of the check, Cannot be nil
+        # script    - The script to run locally
+        # interval  - The time interval to conduct the check. IE: '10s'
+        # id        - ID to associate with this check if 'name' is not desired.
+        # notes     - Message to place as notes for this check.
+        #
+        # Returns: Consul::Model::HealthCheck instance
+        def self.script(name, script, interval, id = name, notes = nil)
+          validate_arg name
+          validate_arg script
+          validate_arg interval
+          c = Consul::Model::HealthCheck.new(name: name, script: script, interval: interval)
+          c[:id] = id unless id.nil?
+          c[:notes] = notes unless notes.nil?
+          c
+        end
+
+        # Public: TTL Check
+        #
+        # name      - The name of the check, Cannot be nil
+        # http      - The HTTP endpoint to hit with periodic GET.
+        # interval  - The time interval to conduct the check. IE: '10s'
+        # id        - ID to associate with this check if 'name' is not desired.
+        # notes     - Message to place as notes for this check
+        #
+        # Returns: Consul::Model::HealthCheck instance
+        def self.http(name, http, interval, id = name, notes = nil)
+          validate_arg name
+          validate_arg http
+          validate_arg interval
+          c = Consul::Model::HealthCheck.new(name: name, script: script, interval: interval)
+          c[:id] = id unless id.nil?
+          c[:notes] = notes unless notes.nil?
+          c
+        end
+
+        private
+
+        def self.validate_arg(arg)
+          raise ArgumentError.new "Illegal Argument: #{arg}" if arg.nil? or arg.empty?
+        end
+
+      end
+
+      # Container Module for simpler way to create a service.
+      module Service
+
+        # Public: Creates a service using a specific name
+        #
+        # name  -  Name of the service to create
+        # check - The Consul::Model::HealthCheck instance to associate with this Session
+        #
+        # Returns: Consul::Model::Service instance
+        def self.for_name(name, check = nil)
+          raise ArgumentError.new "Illegal name: \"#{name}\" for service." if name.nil?
+          unless check.nil? or check.is_a?(Consul::Model::HealthCheck)
+            raise TypeError.new "Illegal Check type: #{check}.  Expecting Consul::Model::HealthCheck"
+          end
+          if check.nil?
+            Consul::Model::Service.new(name: name)
+          else # There is a health check to register
+            Consul::Model::Service.new(name: name, check: check)
+          end
+        end
+
+        # Public: Creates a health check meant to be used when registering a service.
+        #
+        #
+        #
+        # Returns: Consul::Model::HealthCheck instance that represents a script
+        def self.script_health_check(script, interval)
+          Consul::Model::HealthCheck.new(script: script, interval: interval)
+        end
+
+        def self.http_health_check(http, interval)
+          Consul::Model::HealthCheck.new(http: http, interval: interval)
+        end
+
+        def self.ttl_health_check(ttl)
+          Consul::Model::HealthCheck.new(ttl: ttl)
+        end
+      end
+
       private
 
       # Private: Updates the check with the argument status.
@@ -145,7 +268,7 @@ module Consul
         end
         return false if check.nil?
         raise ArgumentError.new "Illegal Status #{status}" unless status == 'pass' or status == 'warn' or status == 'fail'
-        resp = get build_check_url("#{status}/#{check.check_id}")
+        resp = _get build_check_url("#{status}/#{check.check_id}")
         resp.code == 200
       end
 
@@ -161,7 +284,7 @@ module Consul
         # Checking a greater iteration just to be on the safe side.
         unless iteration > threshold or threshold <= 0 or iteration < 0
           sleep((1.0/2.0*(2.0**iteration - 1.0)).ceil) if iteration > 0
-          success, _ = put(url, entity.to_json)
+          success, _ = _put(url, entity.to_json)
           unless success # Unless we successfully registered.
             if threshold == iteration
               @logger.error("Unable to complete registration after #{threshold + 1} attempts")

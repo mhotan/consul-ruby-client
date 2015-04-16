@@ -25,31 +25,6 @@ module Consul
       end
       extend Representer
 
-      def self.for_name(name, check = nil)
-        raise ArgumentError.new "Illegal name: \"#{name}\" for service." if name.nil?
-        unless check.nil? or check.is_a?(Consul::Model::HealthCheck)
-          raise TypeError.new "Illegal Check type: #{check}.  Expecting Consul::Model::HealthCheck"
-        end
-        if check.nil?
-          Consul::Model::Service.new(name: name)
-        else # There is a health check to register
-          Consul::Model::Service.new(name: name, check: check)
-        end
-      end
-
-      # Public: Creates a health check meant to be used when registering a service.
-      def self.script_health_check(script, interval)
-        Consul::Model::HealthCheck.new(script: script, interval: interval)
-      end
-
-      def self.http_health_check(http, interval)
-        Consul::Model::HealthCheck.new(http: http, interval: interval)
-      end
-
-      def self.ttl_health_check(ttl)
-        Consul::Model::HealthCheck.new(ttl: ttl)
-      end
-
     end
   end
 end

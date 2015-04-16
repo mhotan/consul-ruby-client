@@ -27,7 +27,7 @@ module Consul
 
       # Public: Test if this Consul Client is reachable.
       def is_reachable
-        get(base_url, nil, false) == 'Consul Agent'
+        _get(base_url, nil, false) == 'Consul Agent'
       end
 
       protected
@@ -42,7 +42,7 @@ module Consul
       # Throws:
       #     ArgumentError: the url is not valid.
       #     IOError: Unable to reach Consul Agent.
-      def get(url, params = nil, json_only = true)
+      def _get(url, params = nil, json_only = true)
         # Validation
         validate_url(url)
 
@@ -67,7 +67,7 @@ module Consul
       # Throws:
       #     ArgumentError: the url is not valid.
       #     IOError: Unable to reach Consul Agent.
-      def put(url, value, params = nil)
+      def _put(url, value, params = nil)
         # Validation
         validate_url(url)
 

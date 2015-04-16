@@ -1,13 +1,13 @@
 # Consul::Client
 
-TODO: Write a gem description
+Thin Ruby Client around Consul REST API
 
 ## Installation
 
 Add this line to your application's Gemfile:
 
 ```ruby
-gem 'consul-client'
+gem 'consul-ruby-client'
 ```
 
 And then execute:
@@ -16,11 +16,61 @@ And then execute:
 
 Or install it yourself as:
 
-    $ gem install consul-client
+    $ gem install consul-ruby-client
 
 ## Usage
 
-TODO: Write usage instructions here
+To use the client you have to require the root library
+
+```
+# Add the dependencies
+require 'consul/client'
+
+# Import that namespace
+include Consul::Client
+```
+
+### Key Value Store
+
+```
+kvs = KeyValue.new
+kvs.put('cat','dog')
+kvs.get('cat')
+
+```
+
+### Agent
+
+```
+agent = Agent.new
+agent.register(Agent::Service.for_name('my_service'))
+agent.services
+```
+
+### Catalog
+
+TODO
+
+### Sessions
+
+TODO
+
+### Status
+
+TODO
+
+## TODO
+
+* Tests,
+Currently all test were done throught building and installing the ruby client
+and verifying through REPL.  That is not the long term solution.  We are looking
+at integrating Consul into the rspec test itself.
+However a solid short term win will be completing rspec tests with set fixtures.
+
+* Implement more advance locking mechanisms
+* Complete the Agent API self, join, and force-leave
+* ACL API
+* Events
 
 ## Contributing
 

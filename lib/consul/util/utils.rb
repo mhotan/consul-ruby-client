@@ -12,5 +12,6 @@ module Consul
         return false
       end
     end
+
   end
 end
