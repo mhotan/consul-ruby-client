@@ -4,30 +4,21 @@ require_relative '../model/key_value'
 
 module Consul
   module Client
-    class KeyValue
-      include Consul::Client::Base
+    class KeyValue < Base
 
-      # Public: Creates an API Endpoint
+      # Public: Constructor with options hash
       #
-      # data_center - The data center to utilize, defaults to bootstrap 'dc1' datat center
-      # api_host    - The host the Consul Agent is running on. Default: 127.0.0.1
-      # api_port    - The port the Consul Agent is listening on. Default: 8500
-      # version     - The version of the api to use.
-      # logger      - Logging mechanism.  Must conform to Ruby Logger interface
+      # Optional Parameters:
+      #   options[:namespace]   - The KeyValue Store namespace.
+      #   options[:data_center] - The consul data center.
+      #   options[:api_host]    - The api host to request against.
+      #   options[:api_port]    - The api port the api host is listening to.
+      #   options[:version]     - The Consul API version to use.
+      #   options[:logger]      - The default logging mechanism.
       #
-      def initialize(name_space = '', data_center = 'dc1', api_host = '127.0.0.1', api_port = '8500', version = 'v1', logger = Logger.new(STDOUT))
-        name_space = sanitize(name_space)
-        name_space = "#{name_space}/" unless name_space.nil? or name_space.empty?
-        @namespace = sanitize(name_space)
-        @dc = data_center
-        @host = api_host
-        @port = api_port
-        @logger = logger
-        @version = version
-      end
-
-      def name_space
-        @namespace ||= ''
+      # Return: This instance
+      def initialize(options = nil)
+        super(options)
       end
 
       # Public: Gets the value associated with a given key.
@@ -52,21 +43,14 @@ module Consul
         params[:index] = nil if index
         params[:keys] = nil if only_keys
         params[:separator] = separator unless separator.nil?
-        # begin
-        #   resp = RestClient.get key_url(key), {:params => params}
-        # rescue
-        #   # TODO need to pass more information back to the client.
-        #   logger.warn("Unable to get value for #{key}")
-        #   nil
-        # end
         begin
-          resp = _get key_url(key), params
+          resp = _get build_url(compose_key(key)), params
         rescue Exception => e
           logger.warn("Unable to get value for #{key} due to: #{e}")
           return nil
         end
         return nil if resp.code == 404
-        json = JSON.parse(_get key_url(key), params)
+        json = JSON.parse(resp)
         return json if only_keys
         json.map { |kv|
           kv = Consul::Model::KeyValue.new.extend(Consul::Model::KeyValue::Representer).from_hash(kv)
@@ -105,9 +89,9 @@ module Consul
         begin
           value = JSON.generate(value)
         rescue JSON::GeneratorError
-          @logger.debug("Using non-JSON value for key #{key}")
+          logger.debug("Using non-JSON value for key #{key}")
         end
-        _put build_url(key), value, {:params => params}
+        _put build_url(compose_key(key)), value, {:params => params}
       end
 
       # Public: Delete the Key Value pair in consul.
@@ -123,6 +107,14 @@ module Consul
         RestClient.delete build_url(key), {:params => params}
       end
 
+      # Public: Returns the name space of this KeyValue Store.  This allows you to
+      # identify what root namespace all keys will be placed under.
+      #
+      # Returns: Namespace String.
+      def namespace
+        @namespace ||= options[:namespace] || ''
+      end
+
       def build_url(suffix)
         "#{base_versioned_url}/kv/#{suffix}"
       end
@@ -130,11 +122,21 @@ module Consul
       private
 
       def sanitize(key)
-        key.gsub(/^\//,'').gsub(/\/$/,'')
+        unless key.nil? or !key.respond_to?(:to_s)
+          key = key.to_s
+          while !key.empty? and key[0] == '/' do
+            key[0] = ''
+          end
+          while !key.empty? and key[key.length - 1] == '/' do
+            key[key.length - 1] = ''
+          end
+        end
       end
 
-      def key_url(key)
-        build_url("#{name_space}#{key}")
+      def compose_key(key)
+        ns = namespace.strip
+        return "#{key}" if ns.empty?
+        "#{ns}/#{key}"
       end
 
     end

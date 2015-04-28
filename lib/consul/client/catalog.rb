@@ -4,8 +4,7 @@ require_relative '../model/node'
 # Consul Catalog End Point.
 module Consul
   module Client
-    class Catalog
-      include Consul::Client::Base
+    class Catalog < Base
 
       # Public: Returns a list of all the nodes on this client
       #
@@ -86,8 +85,6 @@ module Consul
       private
 
       # Public: Builds the base url
-      #
-      # Example:
       #
       # Returns: The base
       def build_url(suffix)

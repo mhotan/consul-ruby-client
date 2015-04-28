@@ -5,8 +5,7 @@ require_relative '../util/utils'
 module Consul
   module Client
     # Consul Session Client
-    class Session
-      include Consul::Client::Base
+    class Session < Base
 
       # Public: Creates an instance of Consul::Model::Session with as many preset
       # defaults as possible.

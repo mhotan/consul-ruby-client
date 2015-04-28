@@ -10,6 +10,7 @@ require_relative '../consul/client/catalog'
 require_relative '../consul/client/key_value'
 require_relative '../consul/client/session'
 require_relative '../consul/client/status'
+require_relative '../consul/extensions/uid'
 
 module Consul
   module Client

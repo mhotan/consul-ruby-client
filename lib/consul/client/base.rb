@@ -7,22 +7,22 @@ module Consul
   module Client
 
     # Public API Base.
-    module Base
+    class Base
 
-      # Public: Creates an API Endpoint
+      # Public: Constructor with options hash
       #
-      # data_center - The data center to utilize, defaults to bootstrap 'dc1' datat center
-      # api_host    - The host the Consul Agent is running on. Default: 127.0.0.1
-      # api_port    - The port the Consul Agent is listening on. Default: 8500
-      # version     - The version of the api to use.
-      # logger      - Logging mechanism.  Must conform to Ruby Logger interface
+      # Optional Parameters:
+      #   options[:data_center] - The consul data center. Default: 'dc1'.
+      #   options[:api_host]    - The api host to request against.  Default: '127.0.0.1'.
+      #   options[:api_port]    - The api port the api host is listening to. Default: '8500'.
+      #   options[:version]     - The Consul API version to use. Default: 'v1'.
+      #   options[:logger]      - The default logging mechanism. Default: Logger.new(STDOUT).
       #
-      def initialize(data_center = 'dc1', api_host = '127.0.0.1', api_port = '8500', version = 'v1', logger = Logger.new(STDOUT))
-        @dc = data_center
-        @host = api_host
-        @port = api_port
-        @logger = logger
-        @version = version
+      # Return: This instance
+      def initialize(options = nil)
+        options = {} if options.nil?
+        raise TypeError, 'Options must be nil or a Hash' unless options.is_a?(Hash)
+        @options = options.clone
       end
 
       # Public: Test if this Consul Client is reachable.
@@ -88,24 +88,28 @@ module Consul
         end
       end
 
+      def options
+        @options ||= {}
+      end
+
       def data_center
-        @data_center ||= 'dc1'
+        @data_center ||= options[:data_center] || 'dc1'
       end
 
       def host
-        @host ||= '127.0.0.1'
+        @host ||= options[:api_host] || '127.0.0.1'
       end
 
       def port
-        @port ||= '8500'
+        @port ||= options[:api_port] || '8500'
       end
 
       def version
-        @version ||= 'v1'
+        @version ||= options[:version] || 'v1'
       end
 
       def logger
-        @logger ||= Logger.new(STDOUT)
+        @logger ||= options[:logger] || Logger.new(STDOUT)
       end
 
       def https

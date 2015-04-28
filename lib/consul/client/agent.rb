@@ -1,4 +1,5 @@
 require_relative 'base'
+require_relative '../model/agent'
 require_relative '../model/service'
 require_relative '../model/health_check'
 
@@ -6,8 +7,39 @@ require_relative '../model/health_check'
 # Represents Ruby endpoint as described here: https://www.consul.io/docs/agent/http/agent.html
 module Consul
   module Client
-    class Agent
-      include Consul::Client::Base
+    class Agent < Base
+
+      # Public: Describes the agent.  It is actually the same method as /v1/agent/self
+      #
+      # Example:
+      #          a = Agent.new
+      #          a.describe =>
+      #             <Consul::Model::Agent config=#<Consul::Model::Config bootstrap=true, server=true,
+      #               datacenter="dc1", datadir="/path/to/data", dns_recursor="", dns_recursors=[],
+      #               domain="consul.", log_level="INFO", node_name="MyComputer.local", client_addr="127.0.0.1",
+      #               bind_addr="0.0.0.0", advertise_addr="172.19.12.106", ports={"DNS"=>8600, "HTTP"=>8500, "HTTPS"=>-1,
+      #               "RPC"=>8400, "SerfLan"=>8301, "SerfWan"=>8302, "Server"=>8300}, leave_on_term=false,
+      #               skip_leave_on_int=false, stat_site_addr="", protocol=2, enable_debug=false, verify_incoming=false,
+      #               verify_outgoing=false, ca_file="", cert_file="", key_file="", start_join=[], ui_dir="", pid_file="",
+      #               enable_syslog=false, rejoin_after_leave=false>, member=#<Consul::Model::Member name="MyComputer.local",
+      #               addr="172.19.12.106", port=8301, tags={"bootstrap"=>"1", "build"=>"0.5.0:0c7ca91c", "dc"=>"dc1", "port"=>"8300",
+      #               "role"=>"consul", "vsn"=>"2", "vsn_max"=>"2", "vsn_min"=>"1"}, status=1, protocol_min=1, protocol_max=2,
+      #               protocol_cur=2, delegate_min=2, delegate_max=4, delegate_cur=4>>
+      #           a.describe.config.node_name =>
+      #             "MyComputer.local"
+      #           a.describe.member.name =>
+      #             "MyComputer.local"
+      #
+      # Return: Consul::Model::Agent instance that represents this agent.
+      def describe
+        begin
+          resp = _get build_agent_url('self')
+        rescue
+          logger.warn('Unable to request all the services on this through the HTTP API')
+          return nil
+        end
+        Consul::Model::Agent.new.extend(Consul::Model::Agent::Representer).from_json(resp)
+      end
 
       # Public: Returns all the services registered with this Agent.
       #
@@ -16,7 +48,7 @@ module Consul
         begin
           resp = _get build_agent_url('services')
         rescue
-          @logger.warn('Unable to request all the services on this through the HTTP API')
+          logger.warn('Unable to request all the services on this through the HTTP API')
           return nil
         end
         # Consul returns id => ConsulServiceObjects.
@@ -36,7 +68,7 @@ module Consul
         begin
           resp = _get build_agent_url('checks')
         rescue
-          @logger.warn('Unable to request all the checks on this through the HTTP API')
+          logger.warn('Unable to request all the checks on this through the HTTP API')
           return nil
         end
         # Consul returns id => ConsulServiceObjects.
@@ -81,11 +113,11 @@ module Consul
             entity = entity.extend(Consul::Model::Service::Representer)
             success = register_with_backoff(build_service_url('register'), entity, 0, 3)
             if success
-              @logger.info("Successfully registered service #{entity.name}.")
+              logger.info("Successfully registered service #{entity.name}.")
               unless entity.check.nil?
                 # Pass the first health check
                 c = check("service:#{entity.name}")
-                @logger.info("Updating status for health check #{c.check_id} to \"pass\".")
+                logger.info("Updating status for health check #{c.check_id} to \"pass\".")
                 _get build_check_status_url(c.check_id, 'pass')
               end
             end
@@ -174,7 +206,7 @@ module Consul
           c
         end
 
-        # Public: TTL Check
+        # Public: Script Check
         #
         # name      - The name of the check, Cannot be nil
         # script    - The script to run locally
@@ -193,7 +225,7 @@ module Consul
           c
         end
 
-        # Public: TTL Check
+        # Public: HTTP Check
         #
         # name      - The name of the check, Cannot be nil
         # http      - The HTTP endpoint to hit with periodic GET.
@@ -287,10 +319,11 @@ module Consul
           success, _ = _put(url, entity.to_json)
           unless success # Unless we successfully registered.
             if threshold == iteration
-              @logger.error("Unable to complete registration after #{threshold + 1} attempts")
+              logger.error("Unable to complete registration after #{threshold + 1} attempts")
+              return false
             else
               # Attempt to register again using the exponential backoff.
-              @logger.warn("Unable to complete registration after #{iteration + 1} attempts, Retrying up to #{threshold+1} attempts")
+              logger.warn("Unable to complete registration after #{iteration + 1} attempts, Retrying up to #{threshold+1} attempts")
               register_with_backoff(url, entity, iteration + 1, threshold)
             end
           end

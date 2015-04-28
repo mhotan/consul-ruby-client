@@ -2,8 +2,7 @@ require_relative 'base'
 
 module Consul
   module Client
-    class Status
-      include Consul::Client::Base
+    class Status < Base
 
       # Public: This endpoint is used to get the Raft leader for the
       # datacenter in which the agent is running
