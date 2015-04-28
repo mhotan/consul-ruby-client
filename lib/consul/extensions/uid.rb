@@ -38,10 +38,14 @@ module Consul
 
       # Public: Generate a global unique id syncronously with other
       def generate
-        # TODO Has the key ever been generated
+        # TODO Generation implementation
         # Create a Consul Session the the underlying namespace
-        # Get the current value for
-        # Set the check and set primitive
+        # Get the current available value this namespace, acquire the lock
+        #   if unable to get the lock then try again a FIXED number of times
+        #   else (Lock Acquired)
+        #     if value is nil then we need to set the available value to one assuming this id is 0
+        #     if value is not nil then we need to set the available value to one plus that value.
+        #       if unable to set the lock then get the value and try again.
       end
 
       private
