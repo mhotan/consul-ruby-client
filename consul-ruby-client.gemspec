@@ -9,7 +9,8 @@ Gem::Specification.new do |spec|
   spec.authors       = ['Michael Hotan']
   spec.email         = ['michael.hotan@socrata.com']
   spec.summary       = %q{Ruby Client library for communicating with Consul Agents.}
-  spec.description   = %q{Consul agents expose a HTTP REST API and this library is used to communicate directly with it.}
+  spec.description   = %q{Consul Thin Client.  Exposes Consul defined interfaces through a very thin abstraction
+layer.}
   spec.homepage      = 'https://github.com/mhotan-s/consul-ruby-client'
   spec.license       = 'MIT'
 
@@ -23,7 +24,7 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency 'rspec', '~> 3.2'
   spec.add_development_dependency 'simplecov', '~> 0.9'
   spec.add_development_dependency 'webmock', '~> 1.21'
-  spec.add_dependency 'rest-client', '~> 1.8'
+  spec.add_dependency 'rest-client', '~> 1.6'
   spec.add_dependency 'representable', '~> 2.1'
   spec.add_dependency 'json', '~> 1.8'
 end
