@@ -50,7 +50,14 @@ module Consul
         opts[:params] = params unless params.nil?
         opts[:accept] = :json if json_only
         begin
-          return RestClient.get url, opts
+          resp = RestClient.get url, opts
+          success = (resp.code == 200 or resp.code == 201)
+          if success
+            logger.debug("Successful GET at endpoint #{url}")
+          else
+            logger.warn("Unable to GET from endpoint #{url} returned code: #{resp.code}")
+          end
+          return resp
         rescue Exception => e
           # Unable to communicate with consul agent.
           logger.warn(e.message)
@@ -71,16 +78,22 @@ module Consul
         # Validation
         validate_url(url)
 
-        p = {}
-        p[:params] = params unless params.nil?
+        # If possible, Convert value to json
+        unless Consul::Utils.valid_json?(value)
+          value = value.to_json if value.respond_to?(:to_json)
+        end
+
+        opts = {}
+        opts[:params] = params unless params.nil?
         begin
-          if Consul::Utils.valid_json?(value)
-            resp = RestClient.put(url, value, :content_type => :json) {|response, req, res| response }
-          else
-            resp = RestClient.put(url, value) {|response, req, res| response }
-          end
+          opts[:content_type] = :json if Consul::Utils.valid_json?(value)
+          resp = RestClient.put(url, value, opts) {|response, req, res| response }
           success = (resp.code == 200 or resp.code == 201)
-          logger.warn("Unable to send #{value} to endpoint #{url} returned code: #{resp.code}") unless success
+          if success
+            logger.debug("Successful PUT #{value} at endpoint #{url}")
+          else
+            logger.warn("Unable to PUT #{value} at endpoint #{url} returned code: #{resp.code}")
+          end
           return success, resp.body
         rescue Exception => e
           logger.error('RestClient.put Error: Unable to reach consul agent')

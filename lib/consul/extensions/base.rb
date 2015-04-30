@@ -1,8 +1,12 @@
+require 'logger'
+require_relative '../../../lib/consul/client/agent'
+require_relative '../../../lib/consul/client/key_value'
+require_relative '../../../lib/consul/client/session'
 
 module Consul
   module Extensions
     class Base
-
+      include Consul::Client
       # Public: Constructor for this extension.  Ensures a global unique ID for this client for a given namespace.
       #
       #   options               - (Optional) Hash of Consul Client and extension options.
@@ -27,12 +31,20 @@ module Consul
 
       # The Consul Agent Client to use
       def agent
-        @agent = Agent.new(options)
+        @agent ||= Agent.new(options)
       end
 
       # The Key Value Store to use.
       def key_value_store
-        @kvs = KeyValue.new(options)
+        @kvs ||= KeyValue.new(options)
+      end
+
+      def session
+        @session || Session.new(options)
+      end
+
+      def logger
+        @logger ||= options[:logger] || Logger.new(STDOUT)
       end
 
       # TODO Add other clients here.

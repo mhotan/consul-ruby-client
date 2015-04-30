@@ -42,14 +42,14 @@ module Consul
       # session - Session to create.
       # dc      - Consul data center
       #
-      # Returns The Session ID a
+      # Returns The Session ID
       def create(session, dc = nil)
         raise TypeError, 'Session must be of type Consul::Model::Session' unless session.kind_of? Consul::Model::Session
         params = {}
         params[:dc] = dc unless dc.nil?
         success, body = _put(build_url('create'), session.extend(Consul::Model::Session::Representer).to_json, params)
         return Consul::Model::Session.new.extend(Consul::Model::Service::Representer).from_json(body) if success
-        logger.warn("Unable to create session with #{session}")
+        logger.warn("Unable to create session with #{session} reason: #{body}")
         nil
       end
 
@@ -98,7 +98,7 @@ module Consul
         session = extract_session_id(session)
         params = {}
         params[:dc] = dc unless dc.nil?
-        success, _ = _put build_url("renew/#{session.name}"), session.to_json
+        success, _ = _put build_url("renew/#{session}"), session.to_json
         success
       end
 

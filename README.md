@@ -42,9 +42,8 @@ kvs.get('cat')
 ### Agent
 
 ```
-agent = Agent.new
-agent.register(Agent::Service.for_name('my_service'))
-agent.services
+# Register a service named 'my_service'
+Consul::Client::Agent.new.register(Agent::Service.for_name('my_service'))
 ```
 
 ### Catalog

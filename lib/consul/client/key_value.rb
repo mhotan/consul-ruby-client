@@ -25,24 +25,22 @@ module Consul
       #
       # Reference: https://www.consul.io/docs/agent/http/kv.html
       #
-      # key       - Key to get value for, if recurse = true the key is treated by a prefix
-      # recurse   - Flag to signify treating the key as a prefix
-      # index     - Can be used to establish blocking queries by setting
-      # only_keys - Flag to return only keys
-      # separator - list only up to a given separator
+      # Params:
+      # key                 - Key to get value for
+      # params              - Parameter hash for Consul
+      # params[:recurse]    - existence of any value with tell consul to remove all keys
+      #                       with the same prefix
+      # params[:index]      - Existence of :index, indicates to use a blocking call
+      # params[:keys]       - Existence of :keys, indicates to only return keys
+      # params[:separator]  - List only up to a given separator
       #
       # Returns: An array of Consul::Model::KeyValue objects, if only
-      def get(key,
-              recurse = false,
-              index = false,
-              only_keys = false,
-              separator = nil)
+      def get(key, params = {})
         key = sanitize(key)
-        params = {}
-        params[:recurse] = nil if recurse
-        params[:index] = nil if index
-        params[:keys] = nil if only_keys
-        params[:separator] = separator unless separator.nil?
+        params = {} if params.nil?
+        params[:recurse] = nil if params.has_key?(:recurse)
+        params[:index] = nil if params.has_key?(:index)
+        params[:keys] = nil if params.has_key?(:keys)
         begin
           resp = _get build_url(compose_key(key)), params
         rescue Exception => e
@@ -51,10 +49,10 @@ module Consul
         end
         return nil if resp.code == 404
         json = JSON.parse(resp)
-        return json if only_keys
+        return json if params.has_key?(:keys)
         json.map { |kv|
           kv = Consul::Model::KeyValue.new.extend(Consul::Model::KeyValue::Representer).from_hash(kv)
-          kv.value = Base64.decode64(kv.value)
+          kv.value = Base64.decode64(kv.value) unless kv.value.nil?
           kv
         }
       end
@@ -65,46 +63,39 @@ module Consul
       #
       # Reference: https://www.consul.io/docs/agent/http/kv.html
       #
-      # key     - Key
-      # value   - Value to assign for Key
-      # flags   - Client specified value [0, 2e64-1]
-      # cas     - Check and Set operation
-      # acquire - Session id to acquire the lock with a valid session.
-      # release - Session id to release the lock with a valid session.
+      # key               - Key
+      # value             - Value to assign for Key
+      # params            - Consul Parameter Hash
+      # params[:flags]    - Unsigned value between 0 and 2^(64-1). General purpose parameter.
+      # params[:cas]      - Modify index for Check and set operation.
+      # params[:acquire]  - session id to use to lock.
+      # params[:release]  - session id to use to unlock.
       #
       # Returns: True on success, False on failure
       # Throws: IOError: Unable to contact Consul Agent.
-      def put(key,
-              value,
-              flags = nil,
-              cas = nil,
-              acquire_session = nil,
-              release_session = nil)
+      def put(key, value, params = {})
         key = sanitize(key)
-        params = {}
-        params[:flags] = flags unless flags.nil?
-        params[:cas] = cas unless cas.nil?
-        params[:acquire] = acquire_session unless acquire_session.nil?
-        params[:release_session] = release_session unless release_session.nil?
+        params = {} if params.nil?
         begin
           value = JSON.generate(value)
         rescue JSON::GeneratorError
-          logger.debug("Using non-JSON value for key #{key}")
+          logger.debug("Using non-JSON value: #{value} for key #{key}")
         end
-        _put build_url(compose_key(key)), value, {:params => params}
+        _put build_url(compose_key(key)), value, params
       end
 
       # Public: Delete the Key Value pair in consul.
       #
-      # key     - Key
-      # recurse - Delete all keys as the 'key' is a prefix for
-      # cas     - Check and Set
-      def delete(key, recurse = false, cas = nil)
+      # key               - Key
+      # params            - Parameter Hash
+      # params[:recurse]  - Existence of key notifies that all sub keys will be deleted
+      # params[:cas]      - Modify index for Check and set operation.
+      #
+      def delete(key, params = {})
         key = sanitize(key)
         params = {}
-        params[:recurse] = nil if recurse
-        params[:cas] = cas unless cas.nil?
-        RestClient.delete build_url(key), {:params => params}
+        params[:recurse] = nil if params.has_key?(:recurse)
+        RestClient.delete build_url(compose_key(key)), {:params => params}
       end
 
       # Public: Returns the name space of this KeyValue Store.  This allows you to
@@ -131,10 +122,11 @@ module Consul
             key[key.length - 1] = ''
           end
         end
+        key
       end
 
       def compose_key(key)
-        ns = namespace.strip
+        ns = sanitize(namespace.strip)
         return "#{key}" if ns.empty?
         "#{ns}/#{key}"
       end

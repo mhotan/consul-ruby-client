@@ -127,7 +127,7 @@ module Consul
 
       # Public: deregisters an existing ConsulHealthCheck or ConsulService
       #
-      # entity - ConsulHealthCheck or ConsulService to unregister from this
+      # entity - Consul::Model::HealthCheck or Consul::Model::ConsulService to unregister from this
       #
       # Returns - the HTTP Response
       def deregister(entity)
@@ -273,15 +273,12 @@ module Consul
           end
         end
 
-        # Public: Creates a health check meant to be used when registering a service.
-        #
-        #
-        #
         # Returns: Consul::Model::HealthCheck instance that represents a script
         def self.script_health_check(script, interval)
           Consul::Model::HealthCheck.new(script: script, interval: interval)
         end
 
+        # Returns: Consul::Model::HealthCheck instance that represents a http health check.
         def self.http_health_check(http, interval)
           Consul::Model::HealthCheck.new(http: http, interval: interval)
         end
