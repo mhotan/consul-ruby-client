@@ -53,7 +53,7 @@ module Consul
       def service(id, dc = nil, tag = nil)
         params = {}
         params[:dc] = dc unless dc.nil?
-        params.add[:tag] = tag unless tag.nil?
+        params[:tag] = tag unless tag.nil?
         JSON.parse(_get build_url("service/#{id}"), params).map {|n| Consul::Model::Node.new.extend(Consul::Model::Node::Representer).from_hash(n)}
       end
 

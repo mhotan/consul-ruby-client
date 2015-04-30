@@ -201,8 +201,8 @@ module Consul
           validate_arg name
           validate_arg ttl
           c = Consul::Model::HealthCheck.new(name: name, ttl: ttl)
-          c[:id] = id unless id.nil?
-          c[:notes] = notes unless notes.nil?
+          c.id = id unless id.nil?
+          c.notes = notes unless notes.nil?
           c
         end
 
@@ -220,8 +220,8 @@ module Consul
           validate_arg script
           validate_arg interval
           c = Consul::Model::HealthCheck.new(name: name, script: script, interval: interval)
-          c[:id] = id unless id.nil?
-          c[:notes] = notes unless notes.nil?
+          c.id = id unless id.nil?
+          c.notes = notes unless notes.nil?
           c
         end
 
@@ -238,9 +238,9 @@ module Consul
           validate_arg name
           validate_arg http
           validate_arg interval
-          c = Consul::Model::HealthCheck.new(name: name, script: script, interval: interval)
-          c[:id] = id unless id.nil?
-          c[:notes] = notes unless notes.nil?
+          c = Consul::Model::HealthCheck.new(name: name, http: http, interval: interval)
+          c.id = id unless id.nil?
+          c.notes = notes unless notes.nil?
           c
         end
 

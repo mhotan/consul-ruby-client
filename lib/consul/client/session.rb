@@ -26,14 +26,14 @@ module Consul
           ttl = nil)
         raise ArgumentError.new "Illegal Name: #{name}" if name.nil?
         session = Consul::Model::Session.new(name: name)
-        session[:lock_delay] = lock_delay unless lock_delay.nil?
-        session[:node] = node unless node.nil?
+        session.lock_delay = lock_delay unless lock_delay.nil?
+        session.node = node unless node.nil?
         checks = [] if checks.nil?
         checks += 'serfHealth' unless checks.include? 'serfHealth'
-        session[:checks] = checks
+        session.checks = checks
         behaviour = 'release' if behaviour.nil? or behaviour != 'release' or behaviour != 'destroy'
-        session[:behaviour] = behaviour
-        session[:ttl] = ttl unless ttl.nil?
+        session.behaviour = behaviour
+        session.ttl = ttl unless ttl.nil?
         session
       end
 

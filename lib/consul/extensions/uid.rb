@@ -16,6 +16,17 @@ module Consul
 
       # Public: Constructor for this extension.  Ensures a global unique ID for this client for a given namespace.
       #
+      # Under the covers UID generator associates the Consul agent to the determine its individuality away from other clients.
+      # the opts[:client_id] parameter is used to expose an external parameter to allow clients to determin uniqueness.
+      #
+      # For Example:
+      #   catOpts = {:name => 'animal', :client_id => 'cat'}
+      #   otherCatOpts = {:name => 'animal', :client_id => 'cat'}
+      #   dogOpts = {:name => 'animal', :client_id => 'dog'}
+      #
+      # UID.new(catOpts).get will return the same UID as UID.new(otherCatOpts).get
+      # UID.new(catOpts).get  will return different UIDs from UID.new(dogOpts).get
+      #
       #   options               - (Required) Hash of Consul Client and extension options.
       #   options[:name]        - (Required) The name or name space of the GUID to generate.  This extension will
       #                           generate a GUID with respect to other clients is this name space.
