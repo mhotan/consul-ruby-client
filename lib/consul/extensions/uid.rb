@@ -101,7 +101,7 @@ module Consul
           logger.warn("Unable to release lock for #{namespace} reason: #{body}.  Resorting to Timeout.") unless release_lock_success
 
           # Update the Key Value store for this client id so we don't provision another one.
-          client_id_update_success, body = key_value_store.put(client_uid_path, auid.to_s)
+          client_id_update_success, body = key_value_store.put(client_uid_path, auid)
           unless client_id_update_success
             logger.warn("Attempt: #{i} Unable to update id for client #{client_id} with value #{auid} due to #{body}")
             next
