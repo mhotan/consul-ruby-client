@@ -53,16 +53,16 @@ module Consul
 
       # Public: Generate a global unique id synchronously with other
       def get
-        # TODO Generation implementation
-        # Create a Consul Session the the underlying namespace
-        cur_session = session.create(Session.for_name(namespace))
-        raise 'Unable to create session to generate UID.' if cur_session.nil?
-
         # Check if there is already an UID associated with this client_id.
         existing_uid = key_value_store.get(client_uid_path)
         unless existing_uid.nil? or (existing_uid.respond_to?(:empty?) and existing_uid.empty?)
           return existing_uid[0].value.to_i
         end
+
+        # No existing UID so we need to provision our own.
+        # Create a Consul Session the the underlying namespace
+        cur_session = session.create(Session.for_name(namespace))
+        raise 'Unable to create session to generate UID.' if cur_session.nil?
 
         # No existing UID so let provision one for this node.
         for i in 1..MAX_ATTEMPTS
