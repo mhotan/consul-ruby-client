@@ -114,9 +114,9 @@ module Consul
             success = register_with_backoff(build_service_url('register'), entity, 0, 3)
             if success
               logger.info("Successfully registered service #{entity.name}.")
-              unless entity.check.nil?
+              c = check("service:#{entity.name}") unless entity.check.nil?
+              unless c.nil?
                 # Pass the first health check
-                c = check("service:#{entity.name}")
                 logger.info("Updating status for health check #{c.check_id} to \"pass\".")
                 _get build_check_status_url(c.check_id, 'pass')
               end

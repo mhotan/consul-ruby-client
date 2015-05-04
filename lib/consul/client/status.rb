@@ -1,3 +1,4 @@
+require 'json'
 require_relative 'base'
 
 module Consul
@@ -11,7 +12,10 @@ module Consul
       #
       # Returns: Address, host:port.
       def leader
-        RestClient.get leader_url
+        resp = RestClient.get leader_url
+        return resp.body.slice(1, resp.body.length-2) if resp.code == 200
+        logger.warn("Unable to get leader. Resp code: #{resp.code} Resp message: #{resp.body}")
+        nil
       end
 
       # Public: This endpoint retrieves the Raft peers for the
@@ -21,7 +25,10 @@ module Consul
       #
       # Returns: List of addresses.
       def peers
-        RestClient.get peers_url
+        resp = RestClient.get peers_url
+        return JSON.parse(resp.body) if resp.code == 200
+        logger.warn("Unable to get peers. Resp code: #{resp.code} Resp message: #{resp.body}")
+        nil
       end
 
       def build_url(suffix)
