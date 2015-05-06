@@ -111,7 +111,7 @@ module Consul
             return register_with_backoff(build_check_url('register'), entity.extend(Consul::Model::HealthCheck::Representer), 0, 3)
           else
             entity = entity.extend(Consul::Model::Service::Representer)
-            success = register_with_backoff(build_service_url('register'), entity, 0, 3)
+            success, body = _put build_service_url('register'), entity.to_json
             if success
               logger.info("Successfully registered service #{entity.name}.")
               c = check("service:#{entity.name}") unless entity.check.nil?
@@ -120,6 +120,8 @@ module Consul
                 logger.info("Updating status for health check #{c.check_id} to \"pass\".")
                 _get build_check_status_url(c.check_id, 'pass')
               end
+            else
+              logger.warn("Unable to register #{entity}. Reason: #{body}")
             end
             return success
         end
