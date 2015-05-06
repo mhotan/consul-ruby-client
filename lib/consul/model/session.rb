@@ -16,7 +16,7 @@ module Consul
         property :name, as: :Name
         property :node, as: :Node
         collection :checks, as: :Checks
-        property :behaviour, as: :Behavior
+        property :behavior, as: :Behavior
         property :ttl, as: :TTL
 
         # Properties that exclusively read access.

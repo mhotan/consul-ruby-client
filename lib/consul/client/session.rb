@@ -10,30 +10,30 @@ module Consul
       # Public: Creates an instance of Consul::Model::Session with as many preset
       # defaults as possible.
       #
-      # name        - The name of the session.
-      # lock_delay  - Allowance window for leaders to Valid values between '0s' and '60s'
-      # node        - The name of the node, defaults to the node the agent is running on
-      # checks      - Health Checks to associate to this session
-      # behaviour   - 'release' or 'destroy' Behaviour when session is invalidated.
-      # ttl         - When provided  Must be between '10s' and '3600s'
+      # Params -
+      # name              - (Required) The name of the session.
+      # opts              - (Optional) Options hash
+      # opts[:lock_delay]  - Allowance window for leaders to Valid values between '0s' and '60s'
+      # opts[:node]        - The name of the node, defaults to the node the agent is running on
+      # opts[:checks]      - Health Checks to associate to this session
+      # opts[:behavior]   - 'release' or 'destroy' Behaviour when session is invalidated.
+      # opts[:ttl]         - When provided  Must be between '10s' and '3600s'
       #
       # Returns: Consul::Model::Session instance.
-      def self.for_name(name,
-          lock_delay = '15s',
-          node = nil,
-          checks = ['serfHealth'],
-          behaviour = 'release',
-          ttl = nil)
+      def self.for_name(name, opts = {})
+          # lock_delay = '15s',
+          # node = nil,
+          # checks = ['serfHealth'],
+          # behaviour = 'release',
+          # ttl = nil)
         raise ArgumentError.new "Illegal Name: #{name}" if name.nil?
+        opts = {} if opts.nil?
         session = Consul::Model::Session.new(name: name)
-        session.lock_delay = lock_delay unless lock_delay.nil?
-        session.node = node unless node.nil?
-        checks = [] if checks.nil?
-        checks += 'serfHealth' unless checks.include? 'serfHealth'
-        session.checks = checks
-        behaviour = 'release' if behaviour.nil? or behaviour != 'release' or behaviour != 'destroy'
-        session.behaviour = behaviour
-        session.ttl = ttl unless ttl.nil?
+        session.lock_delay = opts[:lock_delay] unless opts.has_key?(:lock_delay)
+        session.node = opts[:node]  unless opts.has_key?(:node)
+        session.checks = opts[:checks] if opts.has_key?(:checks)
+        session.behavior = opts[:behavior] if opts.has_key?(:behavior)
+        session.ttl = opts[:ttl] unless opts.has_key?(:ttl)
         session
       end
 
