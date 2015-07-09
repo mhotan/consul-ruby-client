@@ -49,8 +49,12 @@ module Consul
         opts = {}
         opts[:params] = params unless params.nil?
         opts[:accept] = :json if json_only
+
         begin
-          resp = RestClient.get url, opts
+          resp = makeRequestWithProxySetting {
+            RestClient.get url, opts
+          }
+
           success = (resp.code == 200 or resp.code == 201)
           if success
             logger.debug("Successful GET at endpoint #{url}")
@@ -87,7 +91,11 @@ module Consul
         opts[:params] = params unless params.nil?
         begin
           opts[:content_type] = :json if Consul::Utils.valid_json?(value)
-          resp = RestClient.put(url, value, opts) {|response, req, res| response }
+
+          resp = makeRequestWithProxySetting {
+            RestClient.put(url, value, opts) {|response, req, res| response }
+          }
+
           success = (resp.code == 200 or resp.code == 201)
           if success
             logger.debug("Successful PUT #{value} at endpoint #{url}")
@@ -99,6 +107,17 @@ module Consul
           logger.error('RestClient.put Error: Unable to reach consul agent')
           raise IOError.new "Unable to complete put request: #{e}"
         end
+      end
+
+      def makeRequestWithProxySetting
+        oldProxySetting = RestClient.proxy
+        RestClient.proxy = @options[:proxy]
+
+        response = yield
+
+        RestClient.proxy = oldProxySetting
+
+        response
       end
 
       def options
