@@ -1,4 +1,6 @@
-# Consul::Client
+# Consul::Client (DEPRECATED)
+
+For the sake open source continuity please use and contribute to [Diplomat](https://github.com/WeAreFarmGeek/diplomat)
 
 Thin Ruby Client around Consul REST API
 
