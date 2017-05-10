@@ -48,6 +48,10 @@ kvs.get('cat')
 Consul::Client::Agent.new.register(Agent::Service.for_name('my_service'))
 ```
 
+## Building
+
+See [the build README](build/README.md)
+
 ### Catalog
 
 TODO

@@ -6,12 +6,13 @@ require 'build/version'
 Gem::Specification.new do |spec|
   spec.name          = "build"
   spec.version       = Build::VERSION
-  spec.authors       = ["Michael Hotan"]
-  spec.email         = ["michael.hotan@socrata.com"]
+  spec.authors       = ["Admin Team"]
+  spec.email         = ["mission-control-l@socrata.com"]
 
-  spec.summary       = %q{TODO: Write a short summary, because Rubygems requires one.}
-  spec.description   = %q{TODO: Write a longer description or delete this line.}
-  spec.homepage      = "TODO: Put your gem's website or public repo URL here."
+  spec.summary       = %q{Ruby Client library for communicating with Consul Agents.}
+  spec.description   = %q{Consul Thin Client.  Exposes Consul defined interfaces through a very thin abstraction
+layer.}
+  spec.homepage      = "https://github.com/socrata-platform/consul-ruby-client"
   spec.license       = "MIT"
 
   # Prevent pushing this gem to RubyGems.org by setting 'allowed_push_host', or
