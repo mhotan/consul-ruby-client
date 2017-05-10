@@ -6,8 +6,8 @@ require 'consul/client/version'
 Gem::Specification.new do |spec|
   spec.name          = 'consul-ruby-client'
   spec.version       = Consul::Client::VERSION
-  spec.authors       = ['Michael Hotan']
-  spec.email         = ['michael.hotan@socrata.com']
+  spec.authors       = ['Admin Team']
+  spec.email         = ['mission-control-l@socrata.com']
   spec.summary       = %q{Ruby Client library for communicating with Consul Agents.}
   spec.description   = %q{Consul Thin Client.  Exposes Consul defined interfaces through a very thin abstraction
 layer.}
